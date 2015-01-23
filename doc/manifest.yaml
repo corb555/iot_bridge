@@ -1,0 +1,17 @@
+actions: []
+authors: M Herbert <corb@aol.com>
+brief: ''
+bugtracker: ''
+depends:
+- catkin
+- rospy
+- diagnostic_msgs
+description: The openhab_bridge provides a bi-directional bridge to the OpenHAB Home
+  Automation system.
+license: BSD
+maintainers: mike <corb@aol.com>
+msgs: []
+package_type: package
+repo_url: ''
+srvs: []
+url: http://wiki.ros.org/openhab_bridge
