@@ -1,0 +1,295 @@
+#!/usr/bin/python
+"""
+Copyright (c) 2015, Answer17.  All rights reserved.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of iot_bridge nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+"""
+OVERVIEW
+
+Provide a bridge between ROS and the OpenHAB home automation system:
+ - Pass updates from OpenHAB IoT items to the ROS Robot Operating System (IotUpdates)
+ - Pass updates from ROS topic to OpenHAB IoT items (IotCommands)
+"""
+
+import base64
+import rospy, requests, time
+from diagnostic_msgs.msg import KeyValue
+from multiprocessing import Lock
+
+BASENAME = "iot"
+#GROUP_NAME = "ROS"
+GROUP_NAME = "All"
+__version__ = "0.8.0"
+MAX_DELAY = 257  # 4 minutes
+INITIAL_DELAY = 0.125
+REFRESH_COMMAND = "REFRESH"
+
+class IotUpdates(object):
+    """
+    Handle messages from OpenHAB to ROS:
+      Send polling request to OpenHAB REST interface
+      Process item updates from OpenHAB - only publish changed item states to ROS topic
+    """
+    prev_state_dict = dict()    # Dict to keep track of previous state of each item
+    state_dict_lock = Lock()    # Lock for modifying the prev_state dict
+    iot_rest_id = 0         # ID from Iot REST/atmosphere response
+
+    def __init__(self, cmd, params):
+        self.command_count = 0	# Stat for counting commands
+        self.cmd = cmd          # Iot_command object
+        self.params = params
+        self.pub = rospy.Publisher("%s_updates" %BASENAME, KeyValue,
+                                     queue_size=40)  # Publish updates to this topic
+        rospy.loginfo("Publish updates to: " + BASENAME + "_updates")
+        self.firstLog = True    # On first log, log as info, others as debug
+
+    def polling_header(self):
+        """ Header for OpenHAB REST request - with long polling """
+        return {
+            "Authorization" : "Basic %s" % self.cmd.auth,
+            "X-Atmosphere-Transport" : "long-polling",
+            #"X-Atmosphere-tracking-id" : self.iot_rest_id,
+            "X-Atmosphere-Framework" : "1.0",
+            "Accept" : "application/json"}
+
+
+    def clear_prev_states(self):
+        """ Clear the previous states dict """
+        with self.state_dict_lock:
+            self.prev_state_dict.clear()
+
+
+    def request_item(self, name):
+        """ Request any item in group ROS from OpenHAB when it updates.
+         Long-polling will not respond until an item updates.
+        """
+        connected = True      # Are we properly connected or do we need reconnect?
+        # When an item in Group ROS changes we will get all items in group ROS
+        # and need to determine which has changed
+        url = 'http://%s:%s/rest/items/%s'%(self.params.iot_host,
+                                        self.params.iot_port, name)
+        payload = {'type': 'json'}  # Payload is in JSON format
+        try:
+            if self.firstLog:       # First time loginfo, then logdebug
+	    	rospy.loginfo("Poll " + url)
+            else:
+		rospy.logdebug("Poll " + url)
+            # Long-poll to openHAB REST interface for any item updates
+            req = requests.get(url, params=payload,
+                                headers=self.polling_header() )
+            if req.status_code != requests.codes.ok:
+                req.raise_for_status()
+            # Parse JSON response
+            # At top level, there is type, name, state, link and members array
+            members = req.json()["members"]
+            for member in members:
+                # Each member has a type, name, state and link
+                name = member["name"]
+                state = member["state"]
+                do_publish = True    # Publish if item state has changed
+                with self.state_dict_lock:
+                    # Pub unless we had key before and it hasn't changed
+		    # rospy.logdebug("   Rcvd " + name + ": " + state)
+                    if name in self.prev_state_dict:
+                        if self.prev_state_dict[name] == state:
+                            do_publish = False          # Item hasn't changed
+                    self.prev_state_dict[name] = state  # Update state dict for item
+                if do_publish:
+                    self.pub.publish(name, state)
+                    rospy.logdebug("publish " + name + ":" + state)
+        except ValueError as err:
+            rospy.logwarn(err)
+        except requests.exceptions.ConnectionError as err:
+            rospy.logwarn(err)
+            connected = False   # Return FALSE - need to reconnect
+        except KeyError as err:
+            rospy.logwarn("JSON response missing item: " + str(err))
+            connected = False   # Return FALSE - need to reconnect
+        except Exception as err:
+            rospy.logwarn("Error: " + str(err) )
+            connected = False   # Return FALSE - need to reconnect
+        self.cmd.update_count += 1		# Update stats
+        if (connected == False):
+           self.cmd.error_count += 1
+        self.cmd.send_stats(False)		# Periodically send stats
+        return connected                        # Return whether we are connected
+
+class IotParams(object):
+    """ 
+    Get parameters 
+    host - hostname of OpenHAB server
+    port - port of OpenHAB server
+    username - username for OpenHAB rest interface
+    password - password for OpenHAB rest interface
+    """
+
+    def __init__(self):
+        self.iot_host = rospy.get_param(BASENAME + '/host', "localhost")
+        self.iot_port = rospy.get_param(BASENAME + '/port', 8080)
+        self.username = rospy.get_param(BASENAME + '/username', "iot")
+        self.password = rospy.get_param(BASENAME + '/password', "")
+
+class IotCommands(object):
+    """
+    Handle messages from ROS to OpenHAB:
+    subscribe to ROS topics: iot_command, and iot_set
+    when topic is updated, send to OpenHAB rest interface
+    """
+
+    def __init__(self):
+        self.params = IotParams()
+        self.next_send_time = time.time()
+        rospy.loginfo("ROS Subscribe: " + BASENAME + "_command")
+        rospy.Subscriber("%s_command" %BASENAME, KeyValue, self.command_cb)
+        rospy.loginfo("ROS Subscribe: " + BASENAME + "_set")
+        rospy.Subscriber("%s_set" %BASENAME, KeyValue, self.set_cb)
+
+        self.auth = base64.encodestring('%s:%s'
+                           %(self.params.username, self.params.password)
+                           ).replace('\n', '')
+        self.upd = IotUpdates(self, self.params)
+        self.command_count = 0
+        self.error_count = 0
+        self.update_count = 0
+        self.send_stats(True)       # Send initial stat update
+
+    def basic_header(self):
+        """ Header for OpenHAB REST request - standard """
+        return {
+                "Authorization" : "Basic %s" %self.auth,
+                "Content-type": "text/plain"}
+
+    def post_command(self, key, value):
+        """ Post a command to OpenHAB """
+        url = 'http://%s:%s/rest/items/%s'%(self.params.iot_host,
+                                    self.params.iot_port, key)
+        try:
+        	req = requests.post(url, data=value,
+                                headers=self.basic_header())
+        	if req.status_code != requests.codes.ok:
+            		req.raise_for_status()
+        except requests.exceptions.ConnectionError as err:
+            rospy.logwarn(err)
+	    self.error_count += 1
+        except Exception as err:
+            rospy.logwarn("Error: " + str(err) )
+	    self.error_count += 1
+            
+    def put_status(self, key, value):
+        """ Put a status update to OpenHAB """
+        url = 'http://%s:%s/rest/items/%s/state'%(self.params.iot_host,
+                                    self.params.iot_port, key)
+        try:
+        	req = requests.put(url, data=value, headers=self.basic_header())
+        	if req.status_code != requests.codes.ok:
+            		req.raise_for_status()
+        except requests.exceptions.ConnectionError as err:
+            rospy.logwarn(err)
+            self.error_count += 1
+        except Exception as err:
+            rospy.logwarn("Error: " + str(err) )  
+	    self.error_count += 1        
+
+    def send_stats(self, force):
+        """
+        Send our statistics to OpenHAB. Only sends once per minute unless
+        "force" is true
+        """
+        current_time = time.time()
+        if force or current_time > self.next_send_time:
+            self.next_send_time = current_time + 60
+            val = "%s Updates:%d Cmds:%d Errs:%d"%(time.ctime(current_time),
+                                self.update_count, self.command_count, self.error_count)
+            # TODO self.put_status("ROS_COMMAND", val)
+            rospy.logdebug("Stats " + val)
+
+    def command_cb(self, data):
+        """
+        Callback: rcvd command from ROS. POST command to
+        OpenHAB REST API for device to do something.  
+        Special case: If key is "ROS_COMMAND", handle as
+        a command to us to do something special
+        """
+        rospy.logdebug("ROS to OH: sending cmd %s to %s",  data.value, data.key)
+        self.command_count += 1
+        # This is a command to us for special handling
+        if data.key == "ROS_COMMAND":
+            rospy.logdebug("ROS_COMMAND %s"%data.value)
+            # Special case where client is asking for refresh of ALL data rather than
+            # just new update values
+            if data.value == REFRESH_COMMAND:
+                # Clear previous values so that on next update we send all data
+                rospy.logdebug("Refresh request")
+                self.upd.clear_prev_states()
+
+                # Force update - update value and ROS will send back an update
+                self.send_stats(True)
+            else:
+                rospy.logwarn("Unknown ROS_COMMAND %s" %data.value)
+        else:
+            # Normal case - Post command to OpenHAB to command a device
+            self.post_command(data.key, data.value)
+        self.send_stats(False)
+
+    def set_cb(self, data):
+        """
+        Callback: rcvd status update from ROS. PUT status to
+        OpenHAB REST API to update the state of a device
+        """
+        rospy.logdebug("ROS to OH: set item state for %s to %s", data.key, data.value)
+        self.command_count += 1
+        self.put_status(data.key, data.value)
+        self.send_stats(False)
+
+
+def main():
+    """
+    Start ROS topic subscribers then
+    Loop, long polling for updates from OpenHAB
+    """
+    retry_delay = INITIAL_DELAY
+    rospy.init_node(BASENAME + "bridge", anonymous=False,
+                         log_level=rospy.DEBUG)
+    rospy.loginfo("%s_bridge %s started" %(BASENAME, __version__))
+    cmd = IotCommands()   # Start up ROS subscribers with callbacks
+    while not rospy.is_shutdown():
+	#time.sleep(2)
+        if cmd.upd.request_item(GROUP_NAME):   # Long poll for OpenHAB updates
+            retry_delay = INITIAL_DELAY # Successful, reset retry_delay to initial value
+        else:
+            # Error occurred
+            if retry_delay < .2 or retry_delay > 1:
+                rospy.logwarn(" Error - retry iot REST poll in " + str(retry_delay) + "s")
+            time.sleep(retry_delay) # Time in seconds.
+            if retry_delay * 2 <= MAX_DELAY:
+                retry_delay = retry_delay * 2   # slow down the more we fail
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,6 @@
+<launch>
+  <!-- Iot Bridge -->
+ <node name="iot" pkg="iot_bridge" type="iot_bridge" output="screen">
+       <rosparam file="$(find iot_bridge)/config/items.yaml" command="load" />
+  </node>
+</launch>

@@ -1,6 +1,0 @@
-<launch>
-  <!-- OpenHAB Bridge -->
- <node name="openhab" pkg="openhab_bridge" type="openhab_bridge" output="screen">
-       <rosparam file="$(find openhab_bridge)/config/items.yaml" command="load" />
-  </node>
-</launch>
