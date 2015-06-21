@@ -1,7 +1,7 @@
 Overview
 =============
 
-The openhab_bridge provides a  bridge between the Robot Operating System - ROS and the OpenHAB Home-Automation system. 
+The iot_bridge provides a  bridge between the Robot Operating System - ROS and the OpenHAB Home-Automation system. 
 
 * ROS is an extremely powerful open source set of libraries and tools that help you build robot applications - providing drivers and state-of-the-art algorithms for vision, movement, etc.
 [ros.org](http://www.ros.org/)
@@ -18,9 +18,14 @@ Use Cases:
 * ROS facial recognition recognizes a face at the door and OpenHAB unlocks the door.
 * A Washing Machine indicates to OpenHAB that the load is complete and ROS dispatches a robot to move the laundry to the dryer.
 * OpenHAB MQTT binding indicates that Sarah will be home soon and a sensor indicates that the  temperature is hot.  ROS dispatches the robot to bring Sarah's favorite beer.  OpenHAB turns on her favorite rock music and lowers the house temperature.
-* A user clicks on the OpenHAB GUI on an IPAD and selects a new room location for the robot. The message is forwarded by the openhab_bridge to ROS and ROS dispatches the robot.
+* A user clicks on the OpenHAB GUI on an IPAD and selects a new room location for the robot. The message is forwarded by the iot_bridge to ROS and ROS dispatches the robot.
 
-With the openhab_bridge, any OpenHAB device can be easily setup to publish updates to the openhab_updates topic in ROS, giving a ROS robot knowledge of any Home Automation device. ROS can publish to the openhab_set topic (or openhab_command) and the device in OpenHAB will be set to the new value (or act on the specified command).
+With the iot_bridge, any OpenHAB device can be easily setup to publish updates to the openhab_updates topic in ROS, giving a ROS robot knowledge of any Home Automation device. ROS can publish to the openhab_set topic (or openhab_command) and the device in OpenHAB will be set to the new value (or act on the specified command).
+
+## Release History
+v0.1 - Initial Release
+
+v0.8 - Renamed openhab_bridge to iot_bridge.  *NOTE:* the ROS topic names changed from openhab_* to iot_*.  Changed from long polling to regular polling.  This significantly improves reliabilty without much performance cost.
 
 ## For more information
 
