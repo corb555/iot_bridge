@@ -29,4 +29,4 @@ v0.8 - Renamed openhab_bridge to iot_bridge.  *NOTE:* the ROS topic names change
 
 ## For more information
 
-[ros.org/openhabbridge](http://wiki.ros.org/openhab_bridge)
+[ros.org/iot_bridge](http://wiki.ros.org/iot_bridge)
