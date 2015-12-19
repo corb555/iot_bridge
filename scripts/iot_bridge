@@ -48,9 +48,9 @@ import rospy, requests, time
 from diagnostic_msgs.msg import KeyValue
 from multiprocessing import Lock
 
-BASENAME = "openhab"
+BASENAME = "iot"
 GROUP_NAME = "ROS"
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 MAX_DELAY = 65  # Error retry delay increases with each error.  This is max secs
 INITIAL_DELAY = 0.125
 REFRESH_COMMAND = "REFRESH"
