@@ -40,7 +40,7 @@ from time import sleep
 rospy.init_node('iot_test', anonymous=True)
 
 # Publish a value to iot to send a command to a device -e.g. turn heat on
-pub = rospy.Publisher('openhab_command', KeyValue, queue_size=10)
+pub = rospy.Publisher('iot_command', KeyValue, queue_size=10)
 sleep(1)
 # alternatively, publish a value to iot to set the state of a device - e.g. heat is on
 # pub = rospy.Publisher('openhab_set', KeyValue, queue_size=10)
