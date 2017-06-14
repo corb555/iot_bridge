@@ -154,11 +154,9 @@ install(PROGRAMS
 ## Testing ##
 #############
 
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_iot_bridge.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+if (CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  find_package(catkin REQUIRED COMPONENTS roslaunch)
+  roslaunch_add_file_check(launch)
+  add_rostest(test/bridge.test)
+endif()

@@ -1,0 +1,19 @@
+<launch>
+  <arg name="configfile" default="$(find iot_bridge)/config/items.yaml" />
+
+  <include file="$(find iot_bridge)/launch/iot.launch"
+           pass_all_args="true" />
+
+  <node pkg="iot_bridge" type="iot_test" name="iot_sample" args="arg1 arg2" />
+
+  <!-- This test is a bit flaky for some reasons, so needs retry. -->
+  <test pkg="rostest" type="publishtest" retry="3"
+        name="publishtest" test-name="publishtest">
+    <rosparam>
+      topics:
+        - name: iot_command
+          timeout: 3
+          negative: False
+    </rosparam>
+  </test>
+</launch>
