@@ -124,6 +124,8 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
    scripts/iot_bridge
+   scripts/sample/openhab_test
+   scripts/sample/iot_test
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
