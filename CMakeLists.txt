@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(iot_bridge)
 
-find_package(catkin REQUIRED COMPONENTS
-  diagnostic_msgs
-  rospy
+find_package(catkin REQUIRED COMPONENTS diagnostic_msgs
 )
 
 # catkin_python_setup()
@@ -11,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES iot_bridge
-#  CATKIN_DEPENDS base64 datetime diagnostic_msgs httplib os rospy sys
+  CATKIN_DEPENDS diagnostic_msgs
 #  DEPENDS system_lib
 )
 
