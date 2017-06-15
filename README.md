@@ -6,8 +6,8 @@ The iot_bridge provides a  bridge between the Robot Operating System (ROS) and t
 * ROS is an extremely powerful open source set of libraries and tools that help you build robot applications - providing drivers and state-of-the-art algorithms for vision, movement, etc.
 [ros.org](http://www.ros.org/)
 
-* OpenHAB is an open source system that connects to virtually any intelligent device, such as smoke detectors, motion detectors, temperature sensors, security systems, TV/audio, fingerprint scanners, lighting, 1-Wire, Wemo, CUPS, DMX, KNX, openpaths, Bluetooth, MQTT, Z-Wave, telephony, Insteon, weather sensors, and web services such as Twitter, etc. ROS also provides a basic Web GUI and Iphone/Android app for setting and dynamically viewing values.
-[openhab.org/features](http://www.openhab.org/features-tech.html)
+* OpenHAB is an open source system that connects to virtually any intelligent device, such as smoke detectors, motion detectors, temperature sensors, Amazon Alexa, security systems, TV/audio, fingerprint scanners, lighting, 1-Wire, Wemo, CUPS, DMX, KNX, openpaths, Bluetooth, MQTT, Z-Wave, telephony, Insteon, weather sensors, and web services such as Twitter, etc. OpenHAV also provides a basic Web GUI and Iphone/Android app for setting and dynamically viewing values.
+[openhab.org/features](http://www.openhab.org)
 
 Combine the two and you have an incredibly powerful system.
 
@@ -17,6 +17,7 @@ Use Cases:
 * A motion detector in OpenHAB triggers and ROS dispatches the robot to the location to provide a video feed.
 * ROS facial recognition recognizes a face at the door and OpenHAB unlocks the door.
 * A Washing Machine indicates to OpenHAB that the load is complete and ROS dispatches a robot to move the laundry to the dryer.
+* A user gives a voice smart home command to Alexa.  Using the OpenHAB/Amazon Alexa integration this is forwarded to ROS via the iot_bridge.
 * OpenHAB MQTT binding indicates that Sarah is approaching home and an OpenHAB sensor indicates that the  temperature is hot.  ROS dispatches the robot to bring Sarah's favorite beer.  OpenHAB turns on her favorite rock music and lowers the house temperature.
 * A user clicks on the OpenHAB GUI on an IPAD and selects a new room location for the robot. The message is forwarded by the iot_bridge to ROS and ROS dispatches the robot.
 
