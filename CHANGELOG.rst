@@ -2,8 +2,8 @@
 Changelog for package iot_bridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.0 (2017-06-17)
+------------------
 * Initial release to ROS
 * [test] Add unit test.
 * [maintenance] Add CI config.
