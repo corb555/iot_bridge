@@ -44,16 +44,17 @@ Provide a bridge between ROS and the OpenHAB home automation system:
 
 import base64
 import hashlib
+from rospkg import RosPack
 import rospy, requests, time
 from diagnostic_msgs.msg import KeyValue
 from multiprocessing import Lock
 
 BASENAME = "iot"
 GROUP_NAME = "ROS"
-__version__ = "0.8.1"
 MAX_DELAY = 65  # Error retry delay increases with each error.  This is max secs
 INITIAL_DELAY = 0.125
 REFRESH_COMMAND = "REFRESH"
+PKG_NAME = 'iot_bridge'
 POLL_RATE = 2    # Rate that we poll server in seconds
 
 class IotUpdates(object):
@@ -289,9 +290,10 @@ def main():
     Loop, long polling for updates from OpenHAB
     """
     retry_delay = INITIAL_DELAY
-    rospy.init_node("iot_bridge", anonymous=False,
-                         log_level=rospy.DEBUG)
-    rospy.loginfo("iot_bridge %s started" %( __version__))
+    rospy.init_node(PKG_NAME, anonymous=False, log_level=rospy.DEBUG)
+    rp = RosPack()
+    rospy.loginfo("%s version %s started" %(
+        PKG_NAME, rp.get_manifest(PKG_NAME).version))
     cmd = IotCommands()   # Start up ROS subscribers with callbacks
     while not rospy.is_shutdown():
         if cmd.upd.request_item(GROUP_NAME):   #  poll for OpenHAB updates
