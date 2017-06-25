@@ -1,3 +1,4 @@
+sudo: required
 services:
 - docker
 language: generic
@@ -23,4 +24,5 @@ matrix:
 install:
   - git clone https://github.com/ros-industrial/industrial_ci.git .ci_config
 script:
+#  - ${TRAVIS_BUILD_DIR}/.ci_preprocess.sh  # Commented out maybe until https://github.com/ros-industrial/industrial_ci/issues/183 gets resolved.
   - .ci_config/travis.sh

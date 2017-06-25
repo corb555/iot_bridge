@@ -51,9 +51,9 @@ sleep(1)
 try:
     print "Set " + sys.argv[1] + " to " + sys.argv[2]
     pub.publish(sys.argv[1], sys.argv[2])
-    #pub.publish(sys.argv[1], sys.argv[2])
+    # pub.publish(sys.argv[1], sys.argv[2])
 except Exception as err:
     print err
     print "Usage:  iot_test item_name  Value"
 
-sleep(1)    # Give time for command to be published
+sleep(1)  # Give time for command to be published
