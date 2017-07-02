@@ -1,7 +1,18 @@
 <launch>
   <arg name="configfile" default="$(find iot_bridge)/config/items.yaml" />
-  
-  <node name="iot" pkg="iot_bridge" type="iot_bridge" output="screen">
-    <rosparam file="$(arg configfile)" command="load" />
+  <arg name="iot_server_host" default="0" doc="Host where an IoT server (e.g. openHAB) is running. IP address/hostname string. NOTE: 'use_conffile' must be set 1/true for this to be used. " />
+  <arg name="iot_server_port" default="0" doc="port number for an IoT server (e.g. openHAB). NOTE: 'use_conffile' must be set 1/true for this to be used." />
+  <arg name="use_conffile" default="1" doc="If 0/false (default), parameters need passed via argument of this launch. If true/1, a yaml file passed via 'configfile' will be used." />
+
+  <arg name="NODENAME_IOT_SERVER" default="iot_server" />
+
+  <group unless="$(arg use_conffile)">
+    <!-- Set parameter as private iot server node. -->
+    <param name="$(arg NODENAME_IOT_SERVER)/host" type="str" value="$(arg iot_server_host)" />
+    <param name="port" type="int" value="$(arg iot_server_port)" />
+  </group>
+
+  <node name="$(arg NODENAME_IOT_SERVER)" pkg="iot_bridge" type="iot_bridge" output="screen">
+    <rosparam if="$(arg use_conffile)" file="$(arg configfile)" command="load" />
   </node>
 </launch>

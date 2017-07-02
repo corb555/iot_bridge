@@ -1,0 +1,17 @@
+<!-- Parameters for openHAB -->
+<launch>
+  <arg name="oh_configfile" default="$(find iot_bridge)/config/items.yaml" />
+  <!-- <arg name="oh_server_host" default="localhost" doc="Where an openHAB is running. Either IP address or hostname string." /> -->
+  <arg name="oh_server_host" default="0" doc="Where an openHAB is running. Either IP address or hostname string." />
+  <arg name="oh_server_port" default="8080" />
+
+  <arg name="use_conffile" unless="$(arg oh_server_host)" value="1"
+       doc="If 0/false (default), parameters need passed via argument of this launch. If true/1, a yaml file passed via 'configfile' will be used." />
+  
+  <include file="$(find iot_bridge)/launch/iot.launch">
+    <arg name="configfile" value="$(arg oh_configfile)" />
+    <arg name="iot_server_host" value="$(arg oh_server_host)" />
+    <arg name="iot_server_port" value="$(arg oh_server_port)" />
+    <arg name="use_conffile" value="$(arg use_conffile)" />
+  </include>
+</launch>
